@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Beneficios de la Arquitectura · Monorepo Vite + React + TanStack</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f7f5f0;
+    --bg-card: #ffffff;
+    --bg-soft: #f1ede4;
+    --line: #e9e3d6;
+    --line-soft: #f0eadc;
+    --text: #14171e;
+    --text-dim: #3a4256;
+    --text-muted: #7c7a72;
+    --primary: #2f6f5e;
+    --primary-soft: rgba(47, 111, 94, 0.08);
+    --accent: #c97b3f;
+    --accent-soft: rgba(201, 123, 63, 0.10);
+    --gold: #b06367;
+    --gold-soft: rgba(176, 99, 103, 0.10);
+    --shadow-sm: 0 2px 8px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 16px -2px rgba(0,0,0,0.06);
+    --shadow-lg: 0 12px 40px -8px rgba(0,0,0,0.10);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--bg); color: var(--text); font-family: 'Outfit', system-ui, sans-serif; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+  body { overflow: hidden; }
+
+  /* ── Decorative aurora behind content ───────────────────── */
+  body::before {
+    content: ''; position: fixed; inset: -20vh -10vw; z-index: -2; pointer-events: none;
+    background:
+      radial-gradient(40vw 50vh at 12% 18%, var(--accent-soft) 0%, transparent 60%),
+      radial-gradient(45vw 55vh at 88% 10%, var(--primary-soft) 0%, transparent 65%),
+      radial-gradient(55vw 60vh at 50% 92%, var(--gold-soft) 0%, transparent 70%);
+    filter: blur(40px);
+  }
+
+  /* ── Deck container ────────────────────────────────────── */
+  .deck { width: 100vw; height: 100vh; position: relative; overflow: hidden; }
+  .slides { width: 100%; height: 100%; position: relative; }
+  .slide {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    padding: 5rem 2rem 4rem;
+    opacity: 0; transform: translateX(40px);
+    transition: opacity 0.55s cubic-bezier(0.4, 0, 0.2, 1), transform 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+    overflow-y: auto;
+  }
+  .slide.active { opacity: 1; transform: translateX(0); pointer-events: auto; }
+  .slide.exit-left { opacity: 0; transform: translateX(-40px); }
+  .slide-inner { width: 100%; max-width: 1100px; margin: 0 auto; }
+
+  /* ── Typography ─────────────────────────────────────────── */
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 0.6rem;
+    text-transform: uppercase; letter-spacing: 0.22em; font-size: 0.72rem;
+    font-weight: 600; color: var(--accent); margin-bottom: 1.5rem;
+  }
+  .eyebrow::before { content: ''; width: 28px; height: 1px; background: var(--accent); }
+  h1 {
+    font-family: 'DM Serif Display', serif; font-weight: 400;
+    font-size: clamp(2.4rem, 5.2vw, 4.2rem);
+    letter-spacing: -0.015em; line-height: 1.05;
+    color: var(--text); margin-bottom: 1.4rem;
+  }
+  h2 {
+    font-family: 'DM Serif Display', serif; font-weight: 400;
+    font-size: clamp(1.85rem, 3.5vw, 2.8rem);
+    letter-spacing: -0.01em; line-height: 1.1;
+    color: var(--text); margin-bottom: 1.2rem;
+  }
+  h3 {
+    font-family: 'Outfit', sans-serif; font-weight: 600;
+    font-size: 1.05rem; letter-spacing: -0.005em; color: var(--text);
+    margin-bottom: 0.4rem;
+  }
+  .lede {
+    font-size: clamp(1.05rem, 1.6vw, 1.25rem);
+    color: var(--text-dim); max-width: 720px; line-height: 1.55;
+  }
+  .label {
+    text-transform: uppercase; letter-spacing: 0.16em; font-size: 0.68rem;
+    font-weight: 600; color: var(--text-muted);
+  }
+
+  /* ── Cards ─────────────────────────────────────────────── */
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 1.4rem 1.5rem;
+    box-shadow: var(--shadow-sm);
+  }
+  .card-accent { border-top: 3px solid var(--accent); }
+  .card-primary { border-top: 3px solid var(--primary); }
+  .card-gold { border-top: 3px solid var(--gold); }
+
+  /* ── Cover slide ───────────────────────────────────────── */
+  .cover { text-align: center; }
+  .cover .eyebrow { justify-content: center; }
+  .cover .eyebrow::before { display: none; }
+  .cover h1 { max-width: 16ch; margin: 0 auto 1.5rem; }
+  .cover .lede { margin: 0 auto 2.5rem; }
+  .cover-meta {
+    display: inline-flex; flex-wrap: wrap; gap: 0.5rem 1.5rem;
+    color: var(--text-muted); font-size: 0.85rem;
+  }
+  .cover-meta strong { color: var(--text); font-weight: 500; }
+  .cover-mark {
+    width: 64px; height: 64px; border-radius: 16px;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    display: inline-flex; align-items: center; justify-content: center;
+    margin: 0 auto 2rem; color: #fff;
+    box-shadow: var(--shadow-lg);
+  }
+
+  /* ── Two-col grid ──────────────────────────────────────── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; }
+  .grid-4 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+  .stack { display: flex; flex-direction: column; gap: 1rem; }
+
+  @media (max-width: 820px) {
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    .slide { padding: 4.5rem 1.25rem 3rem; }
+  }
+
+  /* ── Diagrama arquitectura ─────────────────────────────── */
+  .arch-row {
+    display: grid; grid-template-columns: 130px 1fr; gap: 14px;
+    align-items: stretch; margin-bottom: 0.55rem;
+  }
+  .arch-tier {
+    display: flex; align-items: center; justify-content: flex-end;
+    padding-right: 0.4rem;
+    font-size: 0.7rem; letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--text-muted); font-weight: 600;
+  }
+  .arch-blocks { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .arch-block {
+    background: var(--bg-card); border: 1px solid var(--line);
+    border-radius: 8px; padding: 0.6rem 0.9rem;
+    font-size: 0.85rem; color: var(--text); font-weight: 500;
+    display: inline-flex; align-items: center; gap: 0.5rem;
+  }
+  .arch-block .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent);
+  }
+  .arch-block.primary { border-color: var(--primary); }
+  .arch-block.primary .dot { background: var(--primary); }
+  .arch-block.gold { border-color: var(--gold); }
+  .arch-block.gold .dot { background: var(--gold); }
+
+  /* ── Stack chips ───────────────────────────────────────── */
+  .chip-row { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 0.45rem;
+    background: var(--bg-soft); border: 1px solid var(--line);
+    color: var(--text); padding: 0.45rem 0.85rem; border-radius: 999px;
+    font-size: 0.85rem; font-weight: 500;
+  }
+  .chip svg { width: 14px; height: 14px; color: var(--primary); }
+
+  /* ── Bullet list (benefit cards) ───────────────────────── */
+  .benefit-card { display: flex; flex-direction: column; gap: 0.6rem; }
+  .benefit-card .num {
+    font-family: 'DM Serif Display', serif; font-size: 1.8rem;
+    color: var(--accent); line-height: 1;
+  }
+  .benefit-card p { color: var(--text-dim); font-size: 0.95rem; line-height: 1.55; }
+
+  /* ── Metric tiles ──────────────────────────────────────── */
+  .metric {
+    background: var(--bg-card); border: 1px solid var(--line);
+    border-radius: 12px; padding: 1.1rem 1.2rem;
+    display: flex; flex-direction: column; gap: 0.2rem;
+  }
+  .metric .v {
+    font-family: 'DM Serif Display', serif; font-size: 2.1rem;
+    color: var(--primary); line-height: 1; letter-spacing: -0.01em;
+  }
+  .metric .k { font-size: 0.78rem; color: var(--text-muted); }
+
+  /* ── Bench bars ────────────────────────────────────────── */
+  .bench { display: flex; flex-direction: column; gap: 0.55rem; }
+  .bench-row {
+    display: grid; grid-template-columns: 170px 1fr 60px; gap: 12px;
+    align-items: center; padding: 0.3rem 0; font-size: 0.9rem;
+  }
+  .bench-row .lbl { color: var(--text-dim); }
+  .bench-row .val { text-align: right; color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .bar-bg { height: 12px; background: var(--line-soft); border-radius: 6px; overflow: hidden; }
+  .bar-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--accent)); border-radius: 6px; }
+
+  /* ── Code block (mini) ─────────────────────────────────── */
+  .code {
+    background: #1c1a1e; color: #ece8e2;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.78rem;
+    border-radius: 10px; padding: 0.9rem 1.1rem; line-height: 1.55;
+    overflow-x: auto; border: 1px solid #2a272d;
+  }
+  .code .k { color: #d97a5e; }
+  .code .s { color: #c9952e; }
+  .code .c { color: #6f6b66; font-style: italic; }
+  .code .t { color: #88c5b1; }
+
+  /* ── Do / Don't ────────────────────────────────────────── */
+  .dos-donts { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .dos-donts .col h4 {
+    font-size: 0.78rem; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--text-muted); font-weight: 600; margin-bottom: 0.7rem;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .col.do h4 { color: var(--primary); }
+  .col.dont h4 { color: var(--gold); }
+  .col ul { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; }
+  .col li {
+    display: flex; gap: 0.6rem; font-size: 0.92rem; color: var(--text-dim);
+    line-height: 1.45;
+  }
+  .col li svg { flex-shrink: 0; width: 16px; height: 16px; margin-top: 2px; }
+  .col.do li svg { color: var(--primary); }
+  .col.dont li svg { color: var(--gold); }
+
+  /* ── Flow diagram ──────────────────────────────────────── */
+  .flow { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+  .flow-node {
+    background: var(--bg-card); border: 1px solid var(--line);
+    border-radius: 8px; padding: 0.55rem 0.9rem;
+    font-size: 0.85rem; color: var(--text); font-weight: 500;
+  }
+  .flow-arrow {
+    color: var(--text-muted); width: 22px; height: 22px; flex-shrink: 0;
+  }
+
+  /* ── Timeline ──────────────────────────────────────────── */
+  .timeline { position: relative; padding-left: 2.4rem; }
+  .timeline::before {
+    content: ''; position: absolute; left: 11px; top: 6px; bottom: 6px;
+    width: 2px; background: linear-gradient(180deg, var(--primary), var(--accent));
+  }
+  .step { position: relative; padding-bottom: 1.5rem; }
+  .step:last-child { padding-bottom: 0; }
+  .step::before {
+    content: ''; position: absolute; left: -2.4rem; top: 5px;
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--bg); border: 2px solid var(--primary);
+  }
+  .step h4 { font-size: 0.95rem; font-weight: 600; margin-bottom: 0.2rem; }
+  .step p { color: var(--text-dim); font-size: 0.9rem; }
+
+  /* ── Nav (arrows + dots) ───────────────────────────────── */
+  .nav {
+    position: fixed; bottom: 1.4rem; left: 50%; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 0.7rem; z-index: 100;
+    background: rgba(255,255,255,0.7); backdrop-filter: blur(12px);
+    border: 1px solid var(--line); border-radius: 999px;
+    padding: 0.45rem 0.7rem; box-shadow: var(--shadow-md);
+  }
+  .nav-btn {
+    width: 32px; height: 32px; border-radius: 50%;
+    border: 1px solid var(--line); background: var(--bg-card);
+    color: var(--text); display: inline-flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .nav-btn:hover:not(:disabled) { background: var(--bg-soft); border-color: var(--primary); }
+  .nav-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .nav-btn svg { width: 14px; height: 14px; }
+  .nav-dots { display: flex; gap: 0.3rem; }
+  .nav-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--line); cursor: pointer; transition: all 0.15s;
+    border: none; padding: 0;
+  }
+  .nav-dot:hover { background: var(--text-muted); }
+  .nav-dot.active { background: var(--primary); width: 18px; border-radius: 4px; }
+
+  /* ── Counter (top-left) ────────────────────────────────── */
+  .counter {
+    position: fixed; top: 1.4rem; left: 1.8rem; z-index: 50;
+    font-size: 0.78rem; color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.05em;
+  }
+  .counter strong { color: var(--text); font-weight: 600; }
+
+  /* ── Title (top-right) ─────────────────────────────────── */
+  .deck-title {
+    position: fixed; top: 1.4rem; right: 1.8rem; z-index: 50;
+    font-size: 0.78rem; color: var(--text-muted);
+    letter-spacing: 0.04em;
+  }
+  .deck-title strong { color: var(--text); font-weight: 500; }
+
+  /* ── Highlight quote ───────────────────────────────────── */
+  .quote {
+    border-left: 3px solid var(--accent);
+    background: var(--accent-soft);
+    padding: 1rem 1.2rem;
+    border-radius: 0 10px 10px 0;
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.1rem; line-height: 1.4; color: var(--text);
+    font-style: italic;
+  }
+
+  /* ── Inline icon helper ────────────────────────────────── */
+  .ic { width: 18px; height: 18px; flex-shrink: 0; }
+
+  /* ── Misc ──────────────────────────────────────────────── */
+  .muted { color: var(--text-muted); }
+  .row { display: flex; align-items: center; gap: 0.6rem; }
+  .row.gap-lg { gap: 1.5rem; flex-wrap: wrap; }
+  .mt-1 { margin-top: 0.5rem; }
+  .mt-2 { margin-top: 1rem; }
+  .mt-3 { margin-top: 1.5rem; }
+  .mt-4 { margin-top: 2rem; }
+  .pct-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+
+  @media (max-width: 640px) {
+    .counter, .deck-title { display: none; }
+    .dos-donts, .pct-row { grid-template-columns: 1fr; }
+    .bench-row { grid-template-columns: 110px 1fr 50px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="deck" id="deck">
+
+  <div class="counter"><strong id="cur">01</strong> / <span id="tot">15</span></div>
+  <div class="deck-title">Beneficios · <strong>Monorepo TanStack</strong></div>
+
+  <div class="slides" id="slides">
+
+    <!-- ── SLIDE 1 · Cover ─────────────────────────────── -->
+    <section class="slide active" data-title="Portada">
+      <div class="slide-inner cover">
+        <div class="cover-mark">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="32" height="32">
+            <path d="M3 3h7v7H3z"/><path d="M14 3h7v7h-7z"/><path d="M14 14h7v7h-7z"/><path d="M3 14h7v7H3z"/>
+          </svg>
+        </div>
+        <span class="eyebrow">Arquitectura Frontend Moderna</span>
+        <h1>Beneficios de un Monorepo React con TanStack</h1>
+        <p class="lede">Cómo <strong>Vite, TanStack Router/Query/Table y un SDK Axios compartido</strong> transforman un dashboard de e-commerce en un sistema escalable, tipado y rápido de mantener.</p>
+        <div class="cover-meta">
+          <span>Por <strong>Juan Carlos Donis</strong></span>
+          <span>·</span>
+          <span>Stack: <strong>Vite + React + pnpm</strong></span>
+          <span>·</span>
+          <span>15 slides</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SLIDE 2 · El problema ────────────────────────── -->
+    <section class="slide" data-title="El problema">
+      <div class="slide-inner">
+        <span class="eyebrow">01 · Contexto</span>
+        <h2>El caos del frontend tradicional</h2>
+        <p class="lede mt-1">Los dashboards monolíticos acumulan problemas que frenan al equipo y degradan la experiencia.</p>
+        <div class="grid-2 mt-4">
+          <div class="card">
+            <div class="row" style="margin-bottom: 0.7rem;">
+              <svg class="ic" style="color: var(--gold);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              <h3>Lógica de red dispersa</h3>
+            </div>
+            <p class="muted" style="font-size: 0.95rem;">Cada componente llama a <code>fetch</code> o <code>axios</code> por su cuenta. URLs, headers y manejo de errores duplicados en 30+ archivos.</p>
+          </div>
+          <div class="card">
+            <div class="row" style="margin-bottom: 0.7rem;">
+              <svg class="ic" style="color: var(--gold);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              <h3>Estados y caché inventados a mano</h3>
+            </div>
+            <p class="muted" style="font-size: 0.95rem;">Loading, error, refetch, invalidación… código a medida que se rompe en cada feature nueva.</p>
+          </div>
+          <div class="card">
+            <div class="row" style="margin-bottom: 0.7rem;">
+              <svg class="ic" style="color: var(--gold);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h18v18H3z"/><path d="M3 9h18M9 21V9"/></svg>
+              <h3>Tipos <code style="font-size: 0.85em;">any</code> por todos lados</h3>
+            </div>
+            <p class="muted" style="font-size: 0.95rem;">Sin contrato entre la API y la UI. Los bugs llegan a producción y el refactor se vuelve impagable.</p>
+          </div>
+          <div class="card">
+            <div class="row" style="margin-bottom: 0.7rem;">
+              <svg class="ic" style="color: var(--gold);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+              <h3>Bundle gigante y builds lentos</h3>
+            </div>
+            <p class="muted" style="font-size: 0.95rem;">Todo se importa en el primer paint. La tabla de 5.000 filas bloquea el navegador.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SLIDE 3 · Arquitectura ──────────────────────── -->
+    <section class="slide" data-title="Arquitectura">
+      <div class="slide-inner">
+        <span class="eyebrow">02 · Vista general</span>
+        <h2>La arquitectura en una mirada</h2>
+        <p class="lede mt-1">Un monorepo pnpm con dos espacios: la <strong>app</strong> y el <strong>SDK</strong>. Cada capa con una responsabilidad clara.</p>
+        <div class="card mt-4" style="padding: 2rem;">
+          <div class="arch-row">
+            <span class="arch-tier">Aplicación</span>
+            <div class="arch-blocks">
+              <span class="arch-block primary"><span class="dot"></span>apps/web · Vite + React 18</span>
+              <span class="arch-block primary"><span class="dot"></span>TanStack Router</span>
+              <span class="arch-block primary"><span class="dot"></span>TanStack Query</span>
+              <span class="arch-block primary"><span class="dot"></span>TanStack Table</span>
+              <span class="arch-block primary"><span class="dot"></span>TailwindCSS</span>
+            </div>
+          </div>
+          <div class="arch-row">
+            <span class="arch-tier">SDK compartido</span>
+            <div class="arch-blocks">
+              <span class="arch-block"><span class="dot"></span>packages/api-client</span>
+              <span class="arch-block"><span class="dot"></span>Axios instance</span>
+              <span class="arch-block"><span class="dot"></span>Adapters (orders, products, users)</span>
+              <span class="arch-block"><span class="dot"></span>Types</span>
+            </div>
+          </div>
+          <div class="arch-row">
+            <span class="arch-tier">Plataforma</span>
+            <div class="arch-blocks">
+              <span class="arch-block gold"><span class="dot"></span>pnpm workspaces</span>
+              <span class="arch-block gold"><span class="dot"></span>TypeScript strict</span>
+              <span class="arch-block gold"><span class="dot"></span>Vitest + MSW + Testing Library</span>
+              <span class="arch-block gold"><span class="dot"></span>GitHub Actions CI</span>
+            </div>
+          </div>
+        </div>
+        <div class="row mt-3" style="gap: 0.4rem; color: var(--text-muted); font-size: 0.88rem;">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Regla de oro: <strong style="color: var(--text);">la UI nunca llama a la red directamente</strong>. Siempre pasa por el SDK.
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SLIDE 4 · Stack ──────────────────────────────── -->
+    <section class="slide" data-title="Stack">
+      <div class="slide-inner">
+        <span class="eyebrow">03 · Stack</span>
+        <h2>Las herramientas, en su rol</h2>
+        <p class="lede mt-1">Cada pieza resuelve un problema concreto. Ninguna hace trabajo ajeno.</p>
+        <div class="grid-2 mt-4">
+          <div class="card">
+            <h3>⚡ Vite + React</h3>
+            <p class="muted" style="font-size: 0.92rem;">HMR nativo, build ESM, dev server listo en 300 ms. La base que nunca estorba.</p>
+          </div>
+          <div class="card">
+            <h3>📦 pnpm Workspaces</h3>
+            <p class="muted" style="font-size: 0.92rem;">~70% menos <code>node_modules</code>, linking simbólico, lockfile determinista para CI.</p>
+          </div>
+          <div class="card">
+            <h3>🧭 TanStack Router</h3>
+            <p class="muted" style="font-size: 0.92rem;">File-based, type-safe, <code>beforeLoad</code> para guardias. Cero acoplamiento a la API.</p>
+          </div>
+          <div class="card">
+            <h3>🔄 TanStack Query</h3>
+            <p class="muted" style="font-size: 0.92rem;">Caché, retry, invalidación y refetch declarativos. El estado del servidor, resuelto.</p>
+          </div>
+          <div class="card">
+            <h3>📊 TanStack Table</h3>
+            <p class="muted" style="font-size: 0.92rem;">Headless, virtualizable, ~30 ms por frame con 5.000 filas. Sin librería pesada de UI.</p>
+          </div>
+          <div class="card">
+            <h3>🎨 TailwindCSS</h3>
+            <p class="muted" style="font-size: 0.92rem;">Utility-first + JIT. Estilos coherentes, bundle pequeño, sin CSS muerto.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SLIDE 5 · Beneficio 1: Separación ───────────── -->
+    <section class="slide" data-title="Beneficio 1">
+      <div class="slide-inner">
+        <span class="eyebrow">Beneficio · 01</span>
+        <h2>Separación clara de responsabilidades</h2>
+        <p class="lede mt-1">Tres capas que no se mezclan. Cambias una sin romper las otras dos.</p>
+        <div class="mt-4 card" style="padding: 2rem;">
+          <div class="stack" style="gap: 1.4rem;">
+            <div class="row" style="gap: 1rem; align-items: flex-start;">
+              <div style="min-width: 130px;">
+                <span class="label" style="color: var(--primary);">Presentación</span>
+                <h3 class="mt-1">React + Tailwind</h3>
+              </div>
+              <div style="flex: 1;">
+                <p class="muted">Componentes tontos. Reciben datos vía hooks, renderizan, manejan interacción local.</p>
+                <div class="code mt-1" style="font-size: 0.74rem;">const { data: orders } = <span class="k">useOrdersQuery</span>();</div>
+              </div>
+            </div>
+            <div class="row" style="gap: 1rem; align-items: flex-start;">
+              <div style="min-width: 130px;">
+                <span class="label" style="color: var(--accent);">Estado de servidor</span>
+                <h3 class="mt-1">TanStack Query</h3>
+              </div>
+              <div style="flex: 1;">
+                <p class="muted">Caché, reintentos, deduplicación, refetch en foco. Los hooks envuelven las funciones del SDK.</p>
+                <div class="code mt-1" style="font-size: 0.74rem;"><span class="k">useQuery</span>([<span class="s">'orders'</span>], getOrders, &#123; staleTime: <span class="t">60_000</span> &#125;)</div>
+              </div>
+            </div>
+            <div class="row" style="gap: 1rem; align-items: flex-start;">
+              <div style="min-width: 130px;">
+                <span class="label" style="color: var(--gold);">Transporte</span>
+                <h3 class="mt-1">SDK Axios</h3>
+              </div>
+              <div style="flex: 1;">
+                <p class="muted">Una sola instancia, interceptores centralizados, adaptadores por dominio. Es el único que sabe de HTTP.</p>
+                <div class="code mt-1" style="font-size: 0.74rem;"><span class="k">export const</span> <span class="t">getOrders</span> = () =&gt; axiosInstance.<span class="k">get</span>(<span class="s">'/orders'</span>);</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="quote mt-3">"La UI solo sabe que llama a una función que devuelve una promesa."</p>
+      </div>
+    </section>
+
+    <!-- ── SLIDE 6 · Beneficio 2: SDK ──────────────────── -->
+    <section class="slide" data-title="Beneficio 2">
+      <div class="slide-inner">
+        <span class="eyebrow">Beneficio · 02</span>
+        <h2>SDK reutilizable y contratos tipados</h2>
+        <p class="lede mt-1">Un paquete <code>@api-client</code> que cualquier app del monorepo puede consumir. Mismos tipos, misma baseURL, mismas reglas de auth.</p>
+        <div class="grid-2 mt-4">
+          <div class="card">
+            <h3>🔌 Una sola instancia Axios</h3>
+            <p class="muted" style="font-size: 0.92rem;">Timeout global, headers por defecto, interceptores de request/response. La auth vive aquí.</p>
+            <div class="code mt-2" style="font-size: 0.74rem;">axiosInstance.interceptors.request.<span class="k">use</span>(<span class="t">cfg</span> =&gt; &#123;
+  <span class="k">const</span> token = localStorage.<span class="k">getItem</span>(<span class="s">'access_token'</span>);
+  <span class="k">if</span> (token) cfg.headers.Authorization = <span class="s">`Bearer $&#123;token&#125;`</span>;
+  <span class="k">return</span> cfg;
+&#125;);</div>
+          </div>
+          <div class="card">
+            <h3>🧩 Adaptadores por dominio</h3>
+            <p class="muted" style="font-size: 0.92rem;">Una carpeta por dominio: <code>orders/</code>, <code>products/</code>, <code>users/</code>. Cada uno expone funciones puras.</p>
+            <div class="code mt-2" style="font-size: 0.74rem;"><span class="k">export const</span> <span class="t">getOrders</span>: () =&gt; <span class="k">Promise</span>&lt;Order[]&gt;;
+<span class="k">export const</span> <span class="t">createOrder</span>: (n: <span class="k">NewOrder</span>) =&gt; <span class="k">Promise</span>&lt;Order&gt;;
+<span class="k">export const</span> <span class="t">updateOrder</span>: (id: <span class="k">string</span>, p: <span class="k">Partial</span>&lt;Order&gt;) =&gt; ...</div>
+          </div>
+        </div>
+        <div class="card mt-3 card-accent" style="padding: 1.2rem 1.4rem;">
+          <h3>El resultado: el backend cambia y tú solo tocas un paquete</h3>
+          <p class="muted mt-1" style="font-size: 0.92rem;">Si el contrato de la API evoluciona, se actualizan los tipos del SDK y TypeScript marca el camino en cada componente. Cero <code>any</code> propagados, cero errores silenciosos.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SLIDE 7 · Beneficio 3: Data fetching ────────── -->
+    <section class="slide" data-title="Beneficio 3">
+      <div class="slide-inner">
+        <span class="eyebrow">Beneficio · 03</span>
+        <h2>Data fetching declarativo</h2>
+        <p class="lede mt-1">Olvídate de <code>useEffect</code> + <code>setLoading</code> + <code>setError</code>. TanStack Query te devuelve un objeto rico y predecible.</p>
+        <div class="grid-2 mt-4">
+          <div>
+            <h3>Hooks limpios y testeables</h3>
+            <p class="muted mt-1" style="font-size: 0.92rem;">Cada feature tiene su hook. La UI solo lee <code>isLoading</code>, <code>error</code> y <code>data</code>.</p>
+            <div class="code mt-2"><span class="k">export const</span> <span class="t">useOrdersQuery</span> = () =&gt;
+  <span class="k">useQuery</span>([<span class="s">'orders'</span>], getOrders, &#123;
+    <span class="t">staleTime</span>: <span class="t">60_000</span>,
+    <span class="t">refetchOnWindowFocus</span>: <span class="k">false</span>,
+    <span class="t">retry</span>: <span class="t">2</span>,
+  &#125;);</div>
+          </div>
+          <div>
+            <h3>Mutaciones que invalidan solas</h3>
+            <p class="muted mt-1" style="font-size: 0.92rem;"><code>onSuccess</code> invalida la clave correspondiente y la UI se refresca sin reescribir nada.</p>
+            <div class="code mt-2"><span class="k">const</span> qc = <span class="k">useQueryClient</span>();
+<span class="k">return useMutation</span>(createOrder, &#123;
+  <span class="t">onSuccess</span>: () =&gt; qc.<span class="k">invalidateQueries</span>([<span class="s">'orders'</span>]),
+&#125;);</div>
+          </div>
+        </div>
+        <div class="grid-4 mt-4">
+          <div class="metric"><span class="v">–80%</span><span class="k">boilerplate por feature</span></div>
+          <div class="metric"><span class="v">0</span><span class="k">condiciones de carrera en caché</span></div>
+          <div class="metric"><span class="v">1 min</span><span class="k">staleTime configurable</span></div>
+          <div class="metric"><span class="v">∞</span><span class="k">suscriptores con la misma key</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SLIDE 8 · Beneficio 4: Routing ──────────────── -->
+    <section class="slide" data-title="Beneficio 4">
+      <div class="slide-inner">
+        <span class="eyebrow">Beneficio · 04</span>
+        <h2>Routing file-based y code splitting gratis</h2>
+        <p class="lede mt-1">Una carpeta = una ruta. Vite genera el chunk. El usuario descarga solo lo que visita.</p>
+        <div class="card mt-4" style="padding: 1.6rem;">
+          <div class="code"><span class="c">// apps/web/src/routes/orders.tsx</span>
+<span class="k">import</span> &#123; Route &#125; <span class="k">from</span> <span class="s">'@tanstack/react-router'</span>;
+<span class="k">import</span> &#123; OrdersTable &#125; <span class="k">from</span> <span class="s">'../components/OrdersTable'</span>;
+
+<span class="k">export const</span> ordersRoute = <span class="k">new</span> Route(&#123;
+  <span class="t">getParentRoute</span>: () =&gt; rootRoute,
+  <span class="t">path</span>: <span class="s">'/orders'</span>,
+  <span class="t">beforeLoad</span>: <span class="k">async</span> (&#123; context &#125;) =&gt; &#123;
+    <span class="k">if</span> (!context.auth.user) <span class="k">throw</span> <span class="k">new</span> Error(<span class="s">'Unauthenticated'</span>);
+  &#125;,
+  <span class="t">component</span>: () =&gt; &lt;<span class="t">RequireAuth</span>&gt;&lt;<span class="t">OrdersTable</span> /&gt;&lt;/<span class="t">RequireAuth</span>&gt;,
+&#125;);</div>
+        </div>
+        <div class="grid-3 mt-3">
+          <div class="card card-primary">
+            <h3>📁 File-based</h3>
+            <p class="muted" style="font-size: 0.9rem;">Creas <code>products.tsx</code> y la ruta <code>/products</code> existe. Sin config central.</p>
+          </div>
+          <div class="card card-primary">
+            <h3>🪶 Lazy por defecto</h3>
+            <p class="muted" style="font-size: 0.9rem;">Cada ruta es su propio chunk. El bundle de Orders pesa ~45 KB gzipped.</p>
+          </div>
+          <div class="card card-primary">
+            <h3>🛡️ Guardias declarativas</h3>
+            <p class="muted" style="font-size: 0.9rem;"><code>beforeLoad</code> corta antes de renderizar. Cero parpadeo de UI no autenticada.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SLIDE 9 · Beneficio 5: Tablas ───────────────── -->
+    <section class="slide" data-title="Beneficio 5">
+      <div class="slide-inner">
+        <span class="eyebrow">Beneficio · 05</span>
+        <h2>Tablas que rinden con 5.000 filas</h2>
+        <p class="lede mt-1">TanStack Table es headless: tú pones el HTML, ellos te dan sort, filter, paginación y selección sin atarte a un look.</p>
+        <div class="grid-2 mt-4">
+          <div>
+            <h3>Lo que obtienes sin escribir lógica</h3>
+            <ul class="stack" style="list-style: none; gap: 0.4rem; margin-top: 0.7rem; font-size: 0.95rem; color: var(--text-dim);">
+              <li class="row"><svg class="ic" style="color: var(--primary);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Sorting por columna, multi-columna</li>
+              <li class="row"><svg class="ic" style="color: var(--primary);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Filtros globales y por columna</li>
+              <li class="row"><svg class="ic" style="color: var(--primary);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Paginación server-side o client-side</li>
+              <li class="row"><svg class="ic" style="color: var(--primary);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Selección múltiple con checkboxes</li>
+              <li class="row"><svg class="ic" style="color: var(--primary);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Virtualización con <code>@tanstack/react-virtual</code></li>
+            </ul>
+          </div>
+          <div>
+            <h3>Rendimiento medido</h3>
+            <p class="muted mt-1" style="font-size: 0.9rem;">Benchmark interno con 5.000 órdenes en modo dev de Vite.</p>
+            <div class="bench mt-3">
+              <div class="bench-row">
+                <span class="lbl">Render inicial</span>
+                <div class="bar-bg"><div class="bar-fill" style="width: 18%"></div></div>
+                <span class="val">120 ms</span>
+              </div>
+              <div class="bench-row">
+                <span class="lbl">Sort por columna</span>
+                <div class="bar-bg"><div class="bar-fill" style="width: 8%"></div></div>
+                <span class="val">28 ms</span>
+              </div>
+              <div class="bench-row">
+                <span class="lbl">Filtro global</span>
+                <div class="bar-bg"><div class="bar-fill" style="width: 11%"></div></div>
+                <span class="val">45 ms</span>
+              </div>
+              <div class="bench-row">
+                <span class="lbl">Scroll 60 fps</span>
+                <div class="bar-bg"><div class="bar-fill" style="width: 4%"></div></div>
+                <span class="val">30 ms/f</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SLIDE 10 · Beneficio 6: Auth ────────────────── -->
+    <section class="slide" data-title="Beneficio 6">
+      <div class="slide-inner">
+        <span class="eyebrow">Beneficio · 06</span>
+        <h2>Autenticación centralizada</h2>
+        <p class="lede mt-1">El token viaja una sola vez: el interceptor lo adjunta. La verificación, una sola vez: el <code>beforeLoad</code> corta antes del render.</p>
+        <div class="mt-4 card" style="padding: 1.8rem;">
+          <div class="flow">
+            <div class="flow-node">Componente</div>
+            <svg class="flow-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            <div class="flow-node">Hook (TanStack Query)</div>
+            <svg class="flow-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            <div class="flow-node">Adaptador SDK</div>
+            <svg class="flow-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            <div class="flow-node">Axios interceptor</div>
+            <svg class="flow-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            <div class="flow-node">API</div>
+          </div>
+          <div class="row mt-3" style="gap: 0.5rem; color: var(--text-muted); font-size: 0.85rem; justify-content: center;">
+            <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            En cada paso se aplica la regla: nadie inventa headers, nadie duplica la lógica de refresh.
+          </div>
+        </div>
+        <div class="grid-3 mt-3">
+          <div class="card card-gold">
+            <h3>401 centralizado</h3>
+            <p class="muted" style="font-size: 0.9rem;">Un solo lugar dispara el refresh token o el logout.</p>
+          </div>
+          <div class="card card-gold">
+            <h3>Contexto único</h3>
+            <p class="muted" style="font-size: 0.9rem;"><code>useAuth()</code> accesible desde cualquier provider anidado.</p>
+          </div>
+          <div class="card card-gold">
+            <h3>Rutas blindadas</h3>
+            <p class="muted" style="font-size: 0.9rem;"><code>RequireAuth</code> corta el render en milisegundos.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SLIDE 11 · Beneficio 7: Testing ─────────────── -->
+    <section class="slide" data-title="Beneficio 7">
+      <div class="slide-inner">
+        <span class="eyebrow">Beneficio · 07</span>
+        <h2>Testing robusto sin fricción</h2>
+        <p class="lede mt-1">Dos niveles: el SDK se prueba con mocks de red, los hooks se prueban con MSW + React Query. La cobertura dicta el merge.</p>
+        <div class="grid-2 mt-4">
+          <div class="card">
+            <h3>🧪 Test del SDK</h3>
+            <p class="muted" style="font-size: 0.9rem;">MSW intercepta <code>fetch</code> a nivel de Node, así que el test es indistinguible del runtime real.</p>
+            <div class="code mt-2" style="font-size: 0.74rem;"><span class="k">test</span>(<span class="s">'getOrders returns an array'</span>, <span class="k">async</span> () =&gt; &#123;
+  <span class="k">const</span> orders = <span class="k">await</span> <span class="t">getOrders</span>();
+  <span class="k">expect</span>(orders).<span class="k">toHaveLength</span>(<span class="t">1</span>);
+  <span class="k">expect</span>(orders[<span class="t">0</span>].id).<span class="k">toBe</span>(<span class="s">'1'</span>);
+&#125;);</div>
+          </div>
+          <div class="card">
+            <h3>🪝 Test de hooks</h3>
+            <p class="muted" style="font-size: 0.9rem;">Wrapper con <code>QueryClientProvider</code> + <code>renderHook</code> + <code>waitFor</code>.</p>
+            <div class="code mt-2" style="font-size: 0.74rem;"><span class="k">const</span> &#123; result &#125; = <span class="t">renderHook</span>(() =&gt; <span class="t">useOrdersQuery</span>(), &#123; wrapper &#125;);
+<span class="k">await</span> <span class="t">waitFor</span>(() =&gt;
+  <span class="k">expect</span>(result.current.isSuccess).<span class="k">toBeTruthy</span>()
+);</div>
+          </div>
+        </div>
+        <div class="mt-3 card card-accent" style="padding: 1.2rem 1.4rem;">
+          <div class="row" style="gap: 1.5rem; flex-wrap: wrap;">
+            <div><h3 style="color: var(--accent);">≥ 80% cobertura</h3><p class="muted" style="font-size: 0.88rem;">bloquea el merge en CI</p></div>
+            <div><h3 style="color: var(--accent);">~30% menos bugs</h3><p class="muted" style="font-size: 0.88rem;">en producción vs. sin tests</p></div>
+            <div><h3 style="color: var(--accent);">~3 s</h3><p class="muted" style="font-size: 0.88rem;">suite completa en CI</p></div>
+            <div><h3 style="color: var(--accent);">1 comando</h3><p class="muted" style="font-size: 0.88rem;"><code>pnpm test --coverage</code></p></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SLIDE 12 · Beneficio 8: Performance ────────── -->
+    <section class="slide" data-title="Beneficio 8">
+      <div class="slide-inner">
+        <span class="eyebrow">Beneficio · 08</span>
+        <h2>Optimizaciones listas para producción</h2>
+        <p class="lede mt-1">El setup ya está alineado con las mejores prácticas. Solo enciendes las que necesitas.</p>
+        <div class="timeline mt-4">
+          <div class="step">
+            <h4>Lazy-load de rutas</h4>
+            <p><code>lazy: () =&gt; import('./orders')</code> en <code>routes/index.ts</code>. Vite crea el chunk; el usuario no lo descarga si no lo visita.</p>
+          </div>
+          <div class="step">
+            <h4>Prefetch en hover</h4>
+            <p><code>router.prefetch('/orders')</code> en los links. El primer clic se siente instantáneo.</p>
+          </div>
+          <div class="step">
+            <h4>Cache-busting automático</h4>
+            <p>Vite inyecta hash de contenido en el nombre de los assets. <code>Cache-Control: max-age=31536000</code> sin miedo.</p>
+          </div>
+          <div class="step">
+            <h4>Tailwind en modo JIT</h4>
+            <p>Solo se incluyen las clases que usas. Bundle CSS drásticamente más liviano.</p>
+          </div>
+          <div class="step">
+            <h4>Deploy a CDN</h4>
+            <p><code>pnpm --filter web build</code> → <code>apps/web/dist</code> listo para Netlify, Vercel o Cloudflare Pages.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SLIDE 13 · Métricas ────────────────────────── -->
+    <section class="slide" data-title="Métricas">
+      <div class="slide-inner">
+        <span class="eyebrow">Impacto medible</span>
+        <h2>Lo que cambia cuando se adopta</h2>
+        <p class="lede mt-1">Métricas estimadas basadas en stacks similares (State of JS 2023, benchmarks de TanStack).</p>
+        <div class="grid-3 mt-4">
+          <div class="metric"><span class="v">~70%</span><span class="k">reducción de node_modules con pnpm</span></div>
+          <div class="metric"><span class="v">~300 ms</span><span class="k">dev server listo con Vite</span></div>
+          <div class="metric"><span class="v">~2 s</span><span class="k">instalación para 30 paquetes</span></div>
+          <div class="metric"><span class="v">~80%</span><span class="k">menos boilerplate por feature</span></div>
+          <div class="metric"><span class="v">~30 ms</span><span class="k">por frame en tablas de 5.000 filas</span></div>
+          <div class="metric"><span class="v">~120 ms</span><span class="k">ahorro en first-paint con HTTP/2 push</span></div>
+          <div class="metric"><span class="v">~30%</span><span class="k">menos bugs con cobertura ≥ 80%</span></div>
+          <div class="metric"><span class="v">45 KB</span><span class="k">chunk gzipped por ruta lazy</span></div>
+          <div class="metric"><span class="v">1×</span><span class="k">lugar para cambiar la URL del API</span></div>
+        </div>
+        <p class="muted mt-3" style="font-size: 0.82rem;">* Métricas de referencia en condiciones típicas. Tus números dependen del tamaño del equipo y del codebase.</p>
+      </div>
+    </section>
+
+    <!-- ── SLIDE 14 · Errores comunes ──────────────────── -->
+    <section class="slide" data-title="Errores comunes">
+      <div class="slide-inner">
+        <span class="eyebrow">04 · Trampas a evitar</span>
+        <h2>Errores comunes al implementar</h2>
+        <p class="lede mt-1">La mayoría son fáciles de evitar si los tienes en mente desde el día uno.</p>
+        <div class="dos-donts mt-4">
+          <div class="col do">
+            <h4><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Sí hacer</h4>
+            <ul>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span>Una sola instancia Axios exportada y reutilizada.</span></li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span>Tipos del SDK importados en cada hook.</span></li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span><code>invalidateQueries</code> en cada <code>onSuccess</code> de mutación.</span></li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span>Guardias en <code>beforeLoad</code>, no dentro del componente.</span></li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span><code>staleTime</code> realista (30 s – 2 min) y <code>refetchOnWindowFocus</code>.</span></li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span>Solo <code>pnpm</code>, nunca <code>npm install</code>.</span></li>
+            </ul>
+          </div>
+          <div class="col dont">
+            <h4><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> No hacer</h4>
+            <ul>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg><span>Importar <code>axios</code> directamente desde un componente.</span></li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg><span>Crear <code>axios.create()</code> dentro de cada adaptador.</span></li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg><span>Tipos <code>any</code> en las respuestas del SDK.</span></li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg><span><code>staleTime: Infinity</code> y caché indefinido.</span></li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg><span>Lógica de auth duplicada en cada componente.</span></li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg><span>Olvidar las rutas <code>content</code> de Tailwind (CSS no purgado).</span></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SLIDE 15 · Cierre ──────────────────────────── -->
+    <section class="slide" data-title="Cierre">
+      <div class="slide-inner cover">
+        <div class="cover-mark" style="background: linear-gradient(135deg, var(--accent), var(--primary));">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="32" height="32"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <span class="eyebrow">Conclusión</span>
+        <h1>Una arquitectura que escala con tu equipo</h1>
+        <p class="lede">Tres capas independientes, un SDK compartido, tipos de extremo a extremo, tests automatizados y un bundle que no se inmola cuando agregas una feature nueva.</p>
+        <div class="grid-3 mt-4" style="text-align: left;">
+          <div class="card"><h3>🚀 Más velocidad</h3><p class="muted" style="font-size: 0.9rem;">Vite HMR, builds pequeños, deploy a CDN en minutos.</p></div>
+          <div class="card"><h3>🛡️ Más confianza</h3><p class="muted" style="font-size: 0.9rem;">Tipos de punta a punta + tests + cobertura que bloquea el merge.</p></div>
+          <div class="card"><h3>🧩 Más reusable</h3><p class="muted" style="font-size: 0.9rem;">El SDK alimenta la web hoy y micro-frontends mañana.</p></div>
+        </div>
+        <div class="cover-meta mt-4">
+          <span>Gracias · <strong>Juan Carlos Donis</strong></span>
+          <span>·</span>
+          <span>15 slides</span>
+          <span>·</span>
+          <span>Usa <kbd style="background: var(--bg-soft); padding: 0.1rem 0.4rem; border-radius: 4px; font-size: 0.78rem; border: 1px solid var(--line);">←</kbd> <kbd style="background: var(--bg-soft); padding: 0.1rem 0.4rem; border-radius: 4px; font-size: 0.78rem; border: 1px solid var(--line);">→</kbd> para navegar</span>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- ── Navegación ────────────────────────────────────── -->
+  <nav class="nav" aria-label="Navegación de slides">
+    <button class="nav-btn" id="prev" aria-label="Anterior">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <div class="nav-dots" id="dots" aria-label="Ir a slide"></div>
+    <button class="nav-btn" id="next" aria-label="Siguiente">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+  </nav>
+
+</div>
+
+<script>
+(function() {
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  const dotsEl = document.getElementById('dots');
+  const prev = document.getElementById('prev');
+  const next = document.getElementById('next');
+  const cur = document.getElementById('cur');
+  const tot = document.getElementById('tot');
+  tot.textContent = String(total).padStart(2, '0');
+
+  // Build dots
+  for (let i = 0; i < total; i++) {
+    const d = document.createElement('button');
+    d.className = 'nav-dot' + (i === 0 ? ' active' : '');
+    d.setAttribute('aria-label', 'Ir a slide ' + (i + 1));
+    d.addEventListener('click', () => goTo(i));
+    dotsEl.appendChild(d);
+  }
+
+  let current = 0;
+  let busy = false;
+
+  function update() {
+    slides.forEach((s, i) => {
+      s.classList.remove('active', 'exit-left');
+      if (i === current) s.classList.add('active');
+      else if (i < current) s.classList.add('exit-left');
+    });
+    document.querySelectorAll('.nav-dot').forEach((d, i) => {
+      d.classList.toggle('active', i === current);
+    });
+    cur.textContent = String(current + 1).padStart(2, '0');
+    prev.disabled = current === 0;
+    next.disabled = current === total - 1;
+  }
+
+  function goTo(i) {
+    if (busy || i === current || i < 0 || i >= total) return;
+    busy = true;
+    current = i;
+    update();
+    setTimeout(() => busy = false, 600);
+  }
+
+  prev.addEventListener('click', () => goTo(current - 1));
+  next.addEventListener('click', () => goTo(current + 1));
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') {
+      e.preventDefault(); goTo(current + 1);
+    } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+      e.preventDefault(); goTo(current - 1);
+    } else if (e.key === 'Home') {
+      e.preventDefault(); goTo(0);
+    } else if (e.key === 'End') {
+      e.preventDefault(); goTo(total - 1);
+    }
+  });
+
+  // Touch swipe
+  let touchX = null;
+  document.addEventListener('touchstart', e => { touchX = e.touches[0].clientX; }, { passive: true });
+  document.addEventListener('touchend', e => {
+    if (touchX === null) return;
+    const dx = e.changedTouches[0].clientX - touchX;
+    if (Math.abs(dx) > 50) goTo(current + (dx < 0 ? 1 : -1));
+    touchX = null;
+  });
+
+  // Mouse wheel (debounced)
+  let wheelLock = false;
+  document.addEventListener('wheel', e => {
+    if (wheelLock) return;
+    if (Math.abs(e.deltaY) < 30) return;
+    wheelLock = true;
+    goTo(current + (e.deltaY > 0 ? 1 : -1));
+    setTimeout(() => wheelLock = false, 700);
+  }, { passive: true });
+
+  update();
+})();
+</script>
+
+</body>
+</html>
