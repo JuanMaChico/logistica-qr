@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from '../lib/auth';
 
 vi.mock('@logistica/sdk', () => ({
@@ -15,14 +16,17 @@ vi.mock('@tanstack/react-router', () => ({
 }));
 
 function renderLoginPage() {
+  const queryClient = new QueryClient();
   return render(
-    <AuthProvider>
-      <form data-testid="login-form">
-        <input type="email" placeholder="Email" />
-        <input type="password" placeholder="Contraseña" />
-        <button type="submit">Ingresar</button>
-      </form>
-    </AuthProvider>,
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <form data-testid="login-form">
+          <input type="email" placeholder="Email" />
+          <input type="password" placeholder="Contraseña" />
+          <button type="submit">Ingresar</button>
+        </form>
+      </AuthProvider>
+    </QueryClientProvider>,
   );
 }
 

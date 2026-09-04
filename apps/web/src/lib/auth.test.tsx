@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from './auth';
 
 vi.mock('@logistica/sdk', () => ({
@@ -16,8 +17,13 @@ beforeEach(() => {
 });
 
 function renderAuthHook() {
+  const queryClient = new QueryClient();
   return renderHook(() => useAuth(), {
-    wrapper: ({ children }) => <AuthProvider>{children}</AuthProvider>,
+    wrapper: ({ children }) => (
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>{children}</AuthProvider>
+      </QueryClientProvider>
+    ),
   });
 }
 

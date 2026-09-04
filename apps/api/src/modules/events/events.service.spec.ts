@@ -13,6 +13,7 @@ describe('EventsService', () => {
       create: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
+      count: jest.fn(),
     },
     rental: {
       create: jest.fn(),
@@ -102,6 +103,47 @@ describe('EventsService', () => {
       const result = await service.findAll(userId, 'owner', orgId);
 
       expect(result).toEqual([]);
+    });
+  });
+
+  describe('getCount', () => {
+    it('should count all org events for owner', async () => {
+      mockPrisma.event.count.mockResolvedValue(3);
+
+      const result = await service.getCount(orgId, userId, 'owner', 'in_progress');
+
+      expect(result).toEqual({ count: 3 });
+      expect(mockPrisma.event.count).toHaveBeenCalledWith({
+        where: { organizationId: orgId, status: 'in_progress' },
+      });
+    });
+
+    it('should count only assigned events for technician', async () => {
+      mockPrisma.event.count.mockResolvedValue(1);
+
+      await service.getCount(orgId, userId, 'technician', 'in_progress');
+
+      expect(mockPrisma.event.count).toHaveBeenCalledWith({
+        where: {
+          organizationId: orgId,
+          rentals: { some: { technicianId: userId } },
+          status: 'in_progress',
+        },
+      });
+    });
+
+    it('should return the per-status breakdown when no status is given', async () => {
+      mockPrisma.event.count.mockResolvedValue(0);
+
+      const result = await service.getCount(orgId, userId, 'owner');
+
+      expect(result).toEqual({
+        pending: 0,
+        in_progress: 0,
+        partial_return: 0,
+        completed: 0,
+      });
+      expect(mockPrisma.event.count).toHaveBeenCalledTimes(4);
     });
   });
 

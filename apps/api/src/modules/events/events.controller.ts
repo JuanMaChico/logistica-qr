@@ -21,7 +21,7 @@ export class EventsController {
     @Query('status') status: string | undefined,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.events.getCount(user.orgId, status as EventStatus | undefined);
+    return this.events.getCount(user.orgId, user.id, user.role, status as EventStatus | undefined);
   }
 
   @Get()

@@ -38,18 +38,22 @@ function AppInner() {
   const auth = useAuth();
 
   return (
-    <QueryClientProvider client={queryClient}>
+    <>
       <RouterProvider router={router} context={{ queryClient, auth }} />
       <Toaster />
-    </QueryClientProvider>
+    </>
   );
 }
 
 function App() {
+  // QueryClientProvider wraps AuthProvider so auth transitions can clear the
+  // query cache (prevents one user's cached data leaking into the next session).
   return (
-    <AuthProvider>
-      <AppInner />
-    </AuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <AppInner />
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }
 

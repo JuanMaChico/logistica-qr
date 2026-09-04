@@ -33,18 +33,25 @@ export class EventsService {
     }
   }
 
-  async getCount(orgId: string, status?: EventStatus) {
+  async getCount(orgId: string, userId: string, userRole: string, status?: EventStatus) {
+    // Technicians only count events they're assigned to (same scope as findAll),
+    // so the sidebar badge matches their actual event list.
+    const scope =
+      userRole === 'owner'
+        ? { organizationId: orgId }
+        : { organizationId: orgId, rentals: { some: { technicianId: userId } } };
+
     if (status) {
       const count = await this.prisma.event.count({
-        where: { organizationId: orgId, status },
+        where: { ...scope, status },
       });
       return { count };
     }
     const [pending, in_progress, partial_return, completed] = await Promise.all([
-      this.prisma.event.count({ where: { organizationId: orgId, status: 'pending' } }),
-      this.prisma.event.count({ where: { organizationId: orgId, status: 'in_progress' } }),
-      this.prisma.event.count({ where: { organizationId: orgId, status: 'partial_return' } }),
-      this.prisma.event.count({ where: { organizationId: orgId, status: 'completed' } }),
+      this.prisma.event.count({ where: { ...scope, status: 'pending' } }),
+      this.prisma.event.count({ where: { ...scope, status: 'in_progress' } }),
+      this.prisma.event.count({ where: { ...scope, status: 'partial_return' } }),
+      this.prisma.event.count({ where: { ...scope, status: 'completed' } }),
     ]);
     return { pending, in_progress, partial_return, completed };
   }

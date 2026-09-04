@@ -37,7 +37,7 @@ describe('EventsController', () => {
     mockService.getCount.mockResolvedValue({ count: 2 });
     const result = await controller.getCount('in_progress', mockUser);
     expect(result).toEqual({ count: 2 });
-    expect(mockService.getCount).toHaveBeenCalledWith('org-1', 'in_progress');
+    expect(mockService.getCount).toHaveBeenCalledWith('org-1', 'user-1', 'owner', 'in_progress');
   });
 
   it('findAll should delegate to service', async () => {
