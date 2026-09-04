@@ -1,10 +1,6 @@
 const flags = {
-  orders: {
-    enabled: true,
-  },
-  products: {
-    enabled: false,
-  },
+  equipment: { enabled: true },
+  scanner: { enabled: true },
 } as const;
 
 function isEnabled(flag: string): boolean {

@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: logistica-qr-postgres
+    restart: unless-stopped
+    # Debe coincidir con DATABASE_URL en apps/api/.env
+    environment:
+      POSTGRES_USER: logistica
+      POSTGRES_PASSWORD: logistica
+      POSTGRES_DB: logistica_qr
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U logistica -d logistica_qr']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:

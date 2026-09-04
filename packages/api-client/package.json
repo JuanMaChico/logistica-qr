@@ -1,5 +1,5 @@
 {
-  "name": "@tokin/api-client",
+  "name": "@logistica/sdk",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@logistica/types": "workspace:*",
     "axios": "^1.7.0"
   },
   "devDependencies": {

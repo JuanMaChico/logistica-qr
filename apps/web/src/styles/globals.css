@@ -1,3 +1,63 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  :root {
+    --background: #0b0d14;
+    --foreground: #e8eaf0;
+    --card: #141720;
+    --card-foreground: #e8eaf0;
+    --popover: #141720;
+    --popover-foreground: #e8eaf0;
+    --primary: #4f8ef7;
+    --primary-foreground: #ffffff;
+    --secondary: #1a1e2b;
+    --secondary-foreground: #e8eaf0;
+    --muted: #1a1e2b;
+    --muted-foreground: #7a7f96;
+    --accent: #1a1e2b;
+    --accent-foreground: #e8eaf0;
+    --destructive: #f25c5c;
+    --destructive-foreground: #ffffff;
+    --border: #262b3d;
+    --input: #262b3d;
+    --ring: #4f8ef7;
+    --chart-1: #4f8ef7;
+    --chart-2: #3dd68c;
+    --chart-3: #f5a623;
+    --chart-4: #a78bfa;
+    --chart-5: #7a7f96;
+    --radius: 0.625rem;
+    --sidebar: #141720;
+    --sidebar-foreground: #e8eaf0;
+    --sidebar-primary: #4f8ef7;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #1a1e2b;
+    --sidebar-accent-foreground: #e8eaf0;
+    --sidebar-border: #262b3d;
+    --sidebar-ring: #4f8ef7;
+
+    --scan: #22d3ee;
+    --accent-dim: #182a50;
+    --success: #3dd68c;
+    --success-bg: #0d2e1e;
+    --warning: #f5a623;
+    --warning-bg: #2e1e06;
+    --repair: #a78bfa;
+    --repair-bg: #1e1535;
+    --destructive-bg: #2e0d0d;
+    --text-dim: #4a4f6a;
+    --font-mono: 'JetBrains Mono Variable', 'SF Mono', 'Cascadia Code', Consolas, monospace;
+  }
+  * {
+    @apply border-border;
+    outline-color: color-mix(in srgb, var(--ring) 50%, transparent);
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    font-family: 'Geist Variable', sans-serif;
+  }
+}

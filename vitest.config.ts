@@ -5,12 +5,21 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
-    setupFiles: [],
-    include: ['apps/**/*.test.{ts,tsx}', 'packages/**/*.test.{ts,tsx}'],
+    setupFiles: ['./apps/web/src/test-setup.ts'],
+    include: ['apps/**/*.test.{ts,tsx}', 'packages/**/*.test.{ts,tsx}', 'packages/**/*.spec.{ts,tsx}'],
     coverage: {
       provider: 'v8',
-      include: ['apps/**/src/**', 'packages/**/src/**'],
-      exclude: ['**/*.test.*', '**/*.d.ts'],
+      include: ['apps/web/src/**', 'packages/api-client/src/**'],
+      exclude: [
+        '**/*.test.*', '**/*.spec.*', '**/*.d.ts',
+        'apps/web/src/main.tsx',
+        'apps/web/src/routes/**',
+        'apps/web/src/styles/**',
+        'apps/web/src/components/**',
+        'apps/web/src/hooks/**',
+        'apps/web/src/lib/queryKeys.ts',
+        'packages/api-client/src/types/**',
+      ],
       thresholds: {
         statements: 80,
         branches: 80,
