@@ -1,0 +1,15 @@
+# Normalizar fines de línea: LF en el repo y en el checkout (evita warnings CRLF en Windows)
+* text=auto eol=lf
+
+# Scripts de shell siempre LF
+*.sh text eol=lf
+
+# Binarios: nunca normalizar
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.pdf binary

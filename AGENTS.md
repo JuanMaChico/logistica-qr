@@ -85,7 +85,24 @@ pnpm typecheck        # TypeScript en todos los paquetes
 pnpm format           # Prettier
 ```
 
-## Última sesión — 06 Ago 2026
+## Última sesión — 04 Sep 2026
+
+### Migración fuera de OneDrive + primer commit real
+- El código se movió de OneDrive a **`C:\dev\logistica-qr`** (repo git canónico). Motivo: correr sobre OneDrive rompe `prisma generate` y lecturas de archivos con `UNKNOWN: unknown error, read` (no hidrata archivos "solo en la nube").
+- Reconectado al remoto existente `github.com/JuanMaChico/logistica-qr` (branch `main`). Se trajo el `Initial commit` desde GitHub y se hizo el **primer commit real** de todo el proyecto (antes todo vivía como cambios sin commitear sobre el template), ya pusheado. `.env` queda gitignored.
+- Los **Docs** siguen en Obsidian/OneDrive (fuera del repo). La carpeta OneDrive original queda como backup.
+- Reconstruidos a mano 3 configs que OneDrive no pudo hidratar: `apps/api/nest-cli.json`, `apps/api/test/jest-e2e.json`, `apps/web/components.json` (contenido estándar, revisar si hacía falta algo custom).
+- Agregado `.gitattributes` (normaliza fines de línea a LF).
+
+### QA manual en navegador (primera vez con browser tool) + fix Bug 1
+- Verificados end-to-end: login dueño, ABM equipos con QR autogenerado (`EQ-PAR-001`, `EQ-MIC-001`), alta de evento con asignación de equipos (→ `in_progress`), detalle de evento, desasignar (`undo-checkout`), dar de baja con motivo, ABM técnicos con PIN autogenerado, **login por PIN**, scoping de navegación por rol, dashboard con gráficos.
+- **Bug 1 (arreglado):** `EquipmentService.retire()` marcaba el equipo `retired` pero no cerraba su `RentalItem` abierto → el evento quedaba con un pendiente imposible de resolver y no se podía cerrar. Ahora `retire()` corre en `$transaction` interactiva: si el equipo tiene un `RentalItem` abierto (en el evento dado o cualquier rental `active`), lo marca devuelto (`scannedInAt`, `returnCondition: damaged`) y reevalúa el estado replicando la lógica del `checkin` (`partial_return` / `completed` + rental `returned`). Tests nuevos en `equipment.service.spec.ts`. Backend **140/140** (antes 138), typecheck 0 errores.
+- **Bugs menores pendientes** (detectados, no arreglados): (1) `Button` (`components/ui/button.tsx`) no usa `React.forwardRef` → warning en cada diálogo por el ref de `DialogClose`. (2) El badge "Mis eventos" del técnico cuenta eventos `in_progress` de toda la org (`/events/count` no filtra por técnico), mientras el listado sí filtra.
+- **Sin cubrir:** el escaneo real por cámara (checkout/checkin vía QR) — no hay cámara en el entorno de QA. Revisar en un dispositivo real, incluyendo dos puntos ya marcados en `scanner.tsx` (mensaje de éxito de check-in dice "Salida registrada"; posible stale-closure de `mode` en `startScanner`).
+
+---
+
+## Sesión anterior — 06 Ago 2026
 
 ### QA del flujo evento+equipos y fix de borrado
 - Probado end-to-end vía API: crear evento con `equipmentIds` → `Rental` (status `active`) → `RentalItem`s → equipos pasan a `rented`. OK.
