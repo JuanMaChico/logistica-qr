@@ -85,7 +85,7 @@ pnpm typecheck        # TypeScript en todos los paquetes
 pnpm format           # Prettier
 ```
 
-## Última sesión — 04 Sep 2026
+## Última sesión — 04-05 Sep 2026
 
 ### Migración fuera de OneDrive + primer commit real
 - El código se movió de OneDrive a **`C:\dev\logistica-qr`** (repo git canónico). Motivo: correr sobre OneDrive rompe `prisma generate` y lecturas de archivos con `UNKNOWN: unknown error, read` (no hidrata archivos "solo en la nube").
@@ -94,10 +94,12 @@ pnpm format           # Prettier
 - Reconstruidos a mano 3 configs que OneDrive no pudo hidratar: `apps/api/nest-cli.json`, `apps/api/test/jest-e2e.json`, `apps/web/components.json` (contenido estándar, revisar si hacía falta algo custom).
 - Agregado `.gitattributes` (normaliza fines de línea a LF).
 
-### QA manual en navegador (primera vez con browser tool) + fix Bug 1
+### QA manual en navegador (primera vez con browser tool) + fixes bugs 1/2/3
 - Verificados end-to-end: login dueño, ABM equipos con QR autogenerado (`EQ-PAR-001`, `EQ-MIC-001`), alta de evento con asignación de equipos (→ `in_progress`), detalle de evento, desasignar (`undo-checkout`), dar de baja con motivo, ABM técnicos con PIN autogenerado, **login por PIN**, scoping de navegación por rol, dashboard con gráficos.
-- **Bug 1 (arreglado):** `EquipmentService.retire()` marcaba el equipo `retired` pero no cerraba su `RentalItem` abierto → el evento quedaba con un pendiente imposible de resolver y no se podía cerrar. Ahora `retire()` corre en `$transaction` interactiva: si el equipo tiene un `RentalItem` abierto (en el evento dado o cualquier rental `active`), lo marca devuelto (`scannedInAt`, `returnCondition: damaged`) y reevalúa el estado replicando la lógica del `checkin` (`partial_return` / `completed` + rental `returned`). Tests nuevos en `equipment.service.spec.ts`. Backend **140/140** (antes 138), typecheck 0 errores.
-- **Bugs menores pendientes** (detectados, no arreglados): (1) `Button` (`components/ui/button.tsx`) no usa `React.forwardRef` → warning en cada diálogo por el ref de `DialogClose`. (2) El badge "Mis eventos" del técnico cuenta eventos `in_progress` de toda la org (`/events/count` no filtra por técnico), mientras el listado sí filtra.
+- **Bug 1 (arreglado):** `EquipmentService.retire()` marcaba el equipo `retired` pero no cerraba su `RentalItem` abierto → el evento quedaba con un pendiente imposible de resolver y no se podía cerrar. Ahora `retire()` corre en `$transaction` interactiva: si el equipo tiene un `RentalItem` abierto (en el evento dado o cualquier rental `active`), lo marca devuelto (`scannedInAt`, `returnCondition: damaged`) y reevalúa el estado replicando la lógica del `checkin` (`partial_return` / `completed` + rental `returned`). Tests nuevos en `equipment.service.spec.ts`. Ver **ADR-016** en `Docs/decisiones.md`.
+- **Bug 2 (arreglado):** `Button` (`components/ui/button.tsx`) ahora usa `React.forwardRef`, así el `DialogClose` de base-ui le pasa el ref y desaparece el warning "Function components cannot be given refs". Verificado en vivo (consola limpia con el modal abierto).
+- **Bug 3 (arreglado, 2 causas):** el badge "Mis eventos" del técnico contaba eventos de toda la org. (1) Backend: `EventsService.getCount()` ahora scopea por técnico (`rentals.some.technicianId`), igual que `findAll`; el controller pasa `userId`+`role`. (2) Frontend: se limpia el cache de React Query en cada transición de auth (login/logout) para que el conteo de un usuario no se filtre a la siguiente sesión — `QueryClientProvider` ahora envuelve a `AuthProvider` (`main.tsx` + `lib/auth.tsx`). Verificado en vivo (dueño badge 1 → técnico sin badge, sin recargar).
+- **Estado final:** backend **143/143** (era 138), frontend **96/96**, typecheck 0. Todo commiteado y pusheado a `origin/main`.
 - **Sin cubrir:** el escaneo real por cámara (checkout/checkin vía QR) — no hay cámara en el entorno de QA. Revisar en un dispositivo real, incluyendo dos puntos ya marcados en `scanner.tsx` (mensaje de éxito de check-in dice "Salida registrada"; posible stale-closure de `mode` en `startScanner`).
 
 ---
