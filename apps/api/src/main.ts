@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import { env } from './config/env'; // valida env y hace fail-fast antes de arrancar
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
@@ -9,10 +10,12 @@ async function bootstrap() {
 
   app.use(helmet());
   app.setGlobalPrefix('api');
-  app.enableCors({ origin: process.env.CORS_ORIGIN ?? '*' });
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }));
+  app.enableCors({ origin: env.CORS_ORIGIN });
+  app.useGlobalPipes(
+    new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),
+  );
+  app.enableShutdownHooks(); // dispara PrismaService.onModuleDestroy ante SIGTERM (Render)
 
-  const port = process.env.PORT ?? 3000;
-  await app.listen(port);
+  await app.listen(env.PORT);
 }
 bootstrap();

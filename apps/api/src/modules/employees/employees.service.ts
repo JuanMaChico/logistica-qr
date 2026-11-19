@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { randomInt } from 'node:crypto';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
 import type { CreateEmployeeDto } from './dto/create-employee.dto';
@@ -64,8 +65,9 @@ export class EmployeesService {
         throw new ConflictException('El PIN ya está en uso, elegí otro');
       }
     } else {
+      // CSPRNG (no Math.random) para que los PINs autogenerados no sean predecibles.
       do {
-        pin = String(Math.floor(1000 + Math.random() * 9000));
+        pin = String(randomInt(1000, 10000));
       } while (await this.isPinTaken(pin));
     }
 
