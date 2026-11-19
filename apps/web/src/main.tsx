@@ -19,6 +19,36 @@ const queryClient = new QueryClient({
   },
 });
 
+function RouteError({ error }: { error: Error }) {
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center gap-3 p-6 text-center">
+      <h1 className="text-xl font-bold text-foreground">Algo salió mal</h1>
+      <p className="max-w-md text-sm text-muted-foreground">{error.message}</p>
+      <button
+        onClick={() => window.location.assign('/')}
+        className="mt-2 rounded-lg bg-primary px-4 py-2 text-sm text-primary-foreground"
+      >
+        Volver al inicio
+      </button>
+    </div>
+  );
+}
+
+function RouteNotFound() {
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center gap-3 p-6 text-center">
+      <h1 className="text-2xl font-bold text-foreground">404</h1>
+      <p className="text-sm text-muted-foreground">La página que buscás no existe.</p>
+      <button
+        onClick={() => window.location.assign('/')}
+        className="mt-2 rounded-lg bg-primary px-4 py-2 text-sm text-primary-foreground"
+      >
+        Volver al inicio
+      </button>
+    </div>
+  );
+}
+
 const router = createRouter({
   routeTree,
   context: {
@@ -26,6 +56,8 @@ const router = createRouter({
     auth: undefined!,
   },
   defaultPreload: 'intent',
+  defaultErrorComponent: RouteError,
+  defaultNotFoundComponent: RouteNotFound,
 });
 
 declare module '@tanstack/react-router' {
