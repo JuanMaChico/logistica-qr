@@ -8,7 +8,9 @@ export class RegisterDto {
   @IsString()
   @MinLength(3)
   @MaxLength(30)
-  @Matches(/^[a-z0-9-]+$/, { message: 'El slug solo puede contener letras minúsculas, números y guiones' })
+  @Matches(/^[a-z0-9-]+$/, {
+    message: 'El slug solo puede contener letras minúsculas, números y guiones',
+  })
   slug!: string;
 
   @IsString()
@@ -19,6 +21,6 @@ export class RegisterDto {
   email!: string;
 
   @IsString()
-  @MinLength(6, { message: 'La contraseña debe tener al menos 6 caracteres' })
+  @MinLength(8, { message: 'La contraseña debe tener al menos 8 caracteres' })
   password!: string;
 }
