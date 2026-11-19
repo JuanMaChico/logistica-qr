@@ -1,7 +1,6 @@
 import { rootRoute } from './__root';
 import { loginRoute } from './login';
 import { pinLoginRoute } from './pin-login';
-import { registerRoute } from './register';
 import { protectedRoute } from './protected';
 import { dashboardRoute } from './dashboard';
 import { equipmentRoute } from './equipment';
@@ -15,8 +14,18 @@ import { bajasRoute } from './bajas';
 const routeTree = rootRoute.addChildren([
   loginRoute,
   pinLoginRoute,
-  registerRoute,
-  protectedRoute.addChildren([dashboardRoute, equipmentRoute, eventsRoute, scannerRoute, employeesRoute, eventDetailRoute, equipmentHistoryRoute, bajasRoute]),
+  // La ruta de auto-registro (/register) se quitó para el deploy de una sola
+  // empresa; el backend gatea el endpoint con ALLOW_REGISTRATION.
+  protectedRoute.addChildren([
+    dashboardRoute,
+    equipmentRoute,
+    eventsRoute,
+    scannerRoute,
+    employeesRoute,
+    eventDetailRoute,
+    equipmentHistoryRoute,
+    bajasRoute,
+  ]),
 ]);
 
 export { routeTree };
