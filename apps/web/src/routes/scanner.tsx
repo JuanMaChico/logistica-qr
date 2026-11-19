@@ -4,28 +4,45 @@ import { Html5Qrcode } from 'html5-qrcode';
 import { protectedRoute } from './protected';
 import { useScannerEvents, useCheckout, useCheckin } from '../hooks/useScanner';
 import {
-  Button, Card, CardContent,
-  Dialog, DialogContent, DialogHeader, DialogTitle,
-  DialogDescription, DialogFooter, Skeleton,
+  Button,
+  Card,
+  CardContent,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  Skeleton,
 } from '../components';
 
 type ScanMode = 'checkout' | 'checkin';
 
-function ScannerPage() {
+export function ScannerPage() {
   const { data: events, isLoading, isError, refetch } = useScannerEvents();
   const checkoutMutation = useCheckout();
   const checkinMutation = useCheckin();
-  const [selectedEvent, setSelectedEvent] = useState<{ id: string; name: string; clientName: string } | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<{
+    id: string;
+    name: string;
+    clientName: string;
+  } | null>(null);
   const [mode, setMode] = useState<ScanMode>('checkout');
   const [scanning, setScanning] = useState(false);
   const [lastScan, setLastScan] = useState<string | null>(null);
   const [lastResult, setLastResult] = useState<'ok' | 'error' | null>(null);
   const [showConditionDialog, setShowConditionDialog] = useState(false);
   const [pendingEquipmentId, setPendingEquipmentId] = useState<string | null>(null);
+  const [lastMode, setLastMode] = useState<ScanMode | null>(null);
   const scannerRef = useRef<Html5Qrcode | null>(null);
+  // Always points to the latest onScanSuccess so the camera callback (bound once
+  // in startScanner) never reads stale `mode`/`selectedEvent` from the first render.
+  const onScanSuccessRef = useRef<(decodedText: string) => void>(() => {});
 
   useEffect(() => {
-    return () => { scannerRef.current?.stop().catch(() => {}); };
+    return () => {
+      scannerRef.current?.stop().catch(() => {});
+    };
   }, []);
 
   const startScanner = useCallback(async () => {
@@ -36,7 +53,7 @@ function ScannerPage() {
       await scanner.start(
         { facingMode: 'environment' },
         { fps: 10, qrbox: { width: 250, height: 250 } },
-        onScanSuccess,
+        (decodedText) => onScanSuccessRef.current(decodedText),
         () => {},
       );
       setScanning(true);
@@ -69,6 +86,7 @@ function ScannerPage() {
 
   const handleCheckout = async (qrCode: string) => {
     if (!selectedEvent) return;
+    setLastMode('checkout');
     try {
       await checkoutMutation.mutateAsync({ eventId: selectedEvent.id, qrCode });
       setLastResult('ok');
@@ -82,6 +100,7 @@ function ScannerPage() {
   const handleCheckinWithCondition = async (condition?: 'good' | 'damaged') => {
     setShowConditionDialog(false);
     if (!selectedEvent || !pendingEquipmentId) return;
+    setLastMode('checkin');
     try {
       await checkinMutation.mutateAsync({
         eventId: selectedEvent.id,
@@ -96,6 +115,9 @@ function ScannerPage() {
     }
     setPendingEquipmentId(null);
   };
+
+  // Keep the camera callback bound to the latest state/handlers (see onScanSuccessRef).
+  onScanSuccessRef.current = onScanSuccess;
 
   if (!selectedEvent) {
     return (
@@ -120,7 +142,9 @@ function ScannerPage() {
           <Card className="p-8 text-center">
             <CardContent className="p-0">
               <p className="text-muted-foreground">No hay eventos disponibles</p>
-              <p className="mt-1 text-sm text-muted-foreground">Creá un evento desde la sección Eventos</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Creá un evento desde la sección Eventos
+              </p>
             </CardContent>
           </Card>
         ) : (
@@ -150,7 +174,10 @@ function ScannerPage() {
           <p className="text-sm text-muted-foreground">{selectedEvent.clientName}</p>
         </div>
         <Button
-          onClick={() => { stopScanner(); setSelectedEvent(null); }}
+          onClick={() => {
+            stopScanner();
+            setSelectedEvent(null);
+          }}
           variant="secondary"
         >
           Cambiar evento
@@ -173,11 +200,15 @@ function ScannerPage() {
       </div>
 
       {lastScan && (
-        <div className={`mb-4 rounded-lg px-4 py-3 text-sm ${
-          lastResult === 'ok' ? 'bg-green-500/10 text-green-400' : 'bg-destructive/10 text-destructive'
-        }`}>
+        <div
+          className={`mb-4 rounded-lg px-4 py-3 text-sm ${
+            lastResult === 'ok'
+              ? 'bg-green-500/10 text-green-400'
+              : 'bg-destructive/10 text-destructive'
+          }`}
+        >
           {lastResult === 'ok'
-            ? `Salida registrada: ${lastScan}`
+            ? `${lastMode === 'checkin' ? 'Retorno registrado' : 'Salida registrada'}: ${lastScan}`
             : `Error: ${lastScan}`}
         </div>
       )}
@@ -210,10 +241,7 @@ function ScannerPage() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex-row gap-3 sm:justify-center">
-            <Button
-              onClick={() => handleCheckinWithCondition('good')}
-              className="flex-1"
-            >
+            <Button onClick={() => handleCheckinWithCondition('good')} className="flex-1">
               Buen estado
             </Button>
             <Button
