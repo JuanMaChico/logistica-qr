@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    env:
+      HUSKY: 0 # no instalar git hooks en CI
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # Genera el cliente de Prisma: lo necesitan tanto el typecheck del backend
+      # como sus tests unitarios (tipos de PrismaClient).
+      - name: Prisma generate
+        run: pnpm --filter @logistica/api prisma:generate
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test (frontend)
+        run: pnpm test
+
+      - name: Test (backend)
+        run: pnpm --filter @logistica/api test
