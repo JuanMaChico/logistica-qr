@@ -43,6 +43,10 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    host: true,
+    // Permite acceder al dev server vía túnel de VS Code (HTTPS) para probar la
+    // cámara del celular, que requiere contexto seguro (getUserMedia).
+    allowedHosts: ['.devtunnels.ms'],
     proxy: {
       '/api': {
         target: 'http://localhost:3000',
