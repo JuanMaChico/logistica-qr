@@ -4,25 +4,25 @@ Sistema de control de inventario con check-in/check-out mediante QR para alquile
 
 ## Stack
 
-| Herramienta | Rol |
-|---|---|
-| pnpm workspaces 10 | Monorepo |
-| Vite 6 | Bundler ESM + HMR |
-| React 18 | UI Framework |
-| TanStack Router | Routing type-safe con guards por rol |
-| TanStack Query | Estado servidor (caché, retry, invalidación) |
-| TanStack Table | Headless table (sort, filter) |
-| TailwindCSS 3 | Utility-first CSS |
-| shadcn/ui | Componentes de UI (tema dark/light) |
-| @logistica/sdk | Única capa HTTP (Axios + JWT) |
-| TypeScript strict | Cero any, tipado punta a punta |
-| Vitest + Testing Library | Tests frontend |
-| Jest | Tests backend |
-| MSW | Mock API en tests |
-| NestJS | Backend framework |
-| Prisma | ORM + PostgreSQL |
-| html5-qrcode | Escaneo QR desde cámara |
-| @vite-pwa/vite-plugin | PWA instalable |
+| Herramienta              | Rol                                          |
+| ------------------------ | -------------------------------------------- |
+| pnpm workspaces 10       | Monorepo                                     |
+| Vite 6                   | Bundler ESM + HMR                            |
+| React 18                 | UI Framework                                 |
+| TanStack Router          | Routing type-safe con guards por rol         |
+| TanStack Query           | Estado servidor (caché, retry, invalidación) |
+| TanStack Table           | Headless table (sort, filter)                |
+| TailwindCSS 3            | Utility-first CSS                            |
+| shadcn/ui                | Componentes de UI (tema dark/light)          |
+| @logistica/sdk           | Única capa HTTP (Axios + JWT)                |
+| TypeScript strict        | Cero any, tipado punta a punta               |
+| Vitest + Testing Library | Tests frontend                               |
+| Jest                     | Tests backend                                |
+| MSW                      | Mock API en tests                            |
+| NestJS                   | Backend framework                            |
+| Prisma                   | ORM + PostgreSQL                             |
+| html5-qrcode             | Escaneo QR desde cámara                      |
+| @vite-pwa/vite-plugin    | PWA instalable                               |
 
 ## Arquitectura (3 capas)
 
@@ -53,8 +53,8 @@ logistica-qr/
 │   ├── web/              ← Frontend React
 │   └── api/              ← Backend NestJS + Prisma
 ├── packages/
-│   ├── sdk/              ← @logistica/sdk (Axios + adapters)
-│   └── types/            ← Tipos compartidos frontend/backend
+│   ├── api-client/       ← @logistica/sdk (Axios + adapters)
+│   └── types/            ← @logistica/types (tipos compartidos)
 ├── Docs/                 ← Documentación del proyecto (externo al repo)
 └── ...
 ```
@@ -88,6 +88,7 @@ pnpm format           # Prettier
 ## Última sesión — 04-05 Sep 2026
 
 ### Migración fuera de OneDrive + primer commit real
+
 - El código se movió de OneDrive a **`C:\dev\logistica-qr`** (repo git canónico). Motivo: correr sobre OneDrive rompe `prisma generate` y lecturas de archivos con `UNKNOWN: unknown error, read` (no hidrata archivos "solo en la nube").
 - Reconectado al remoto existente `github.com/JuanMaChico/logistica-qr` (branch `main`). Se trajo el `Initial commit` desde GitHub y se hizo el **primer commit real** de todo el proyecto (antes todo vivía como cambios sin commitear sobre el template), ya pusheado. `.env` queda gitignored.
 - Los **Docs** siguen en Obsidian/OneDrive (fuera del repo). La carpeta OneDrive original queda como backup.
@@ -95,6 +96,7 @@ pnpm format           # Prettier
 - Agregado `.gitattributes` (normaliza fines de línea a LF).
 
 ### QA manual en navegador (primera vez con browser tool) + fixes bugs 1/2/3
+
 - Verificados end-to-end: login dueño, ABM equipos con QR autogenerado (`EQ-PAR-001`, `EQ-MIC-001`), alta de evento con asignación de equipos (→ `in_progress`), detalle de evento, desasignar (`undo-checkout`), dar de baja con motivo, ABM técnicos con PIN autogenerado, **login por PIN**, scoping de navegación por rol, dashboard con gráficos.
 - **Bug 1 (arreglado):** `EquipmentService.retire()` marcaba el equipo `retired` pero no cerraba su `RentalItem` abierto → el evento quedaba con un pendiente imposible de resolver y no se podía cerrar. Ahora `retire()` corre en `$transaction` interactiva: si el equipo tiene un `RentalItem` abierto (en el evento dado o cualquier rental `active`), lo marca devuelto (`scannedInAt`, `returnCondition: damaged`) y reevalúa el estado replicando la lógica del `checkin` (`partial_return` / `completed` + rental `returned`). Tests nuevos en `equipment.service.spec.ts`. Ver **ADR-016** en `Docs/decisiones.md`.
 - **Bug 2 (arreglado):** `Button` (`components/ui/button.tsx`) ahora usa `React.forwardRef`, así el `DialogClose` de base-ui le pasa el ref y desaparece el warning "Function components cannot be given refs". Verificado en vivo (consola limpia con el modal abierto).
@@ -107,21 +109,25 @@ pnpm format           # Prettier
 ## Sesión anterior — 06 Ago 2026
 
 ### QA del flujo evento+equipos y fix de borrado
+
 - Probado end-to-end vía API: crear evento con `equipmentIds` → `Rental` (status `active`) → `RentalItem`s → equipos pasan a `rented`. OK.
 - Bug encontrado y arreglado: `EventsService.remove()` fallaba con `P2003` (FK) al borrar un evento con equipos asignados. Ahora corre en `$transaction`: nullea `eventId` en `equipment_logs`, borra `rentalItem`s/`rental`s, revierte equipos `rented` → `available`, recién ahí borra el `Event`. Ver ADR-015 en `Docs/decisiones.md`.
 
 ### Cobertura de tests backend 52% → 81.23%
+
 - Creados `events.controller.spec.ts`, `auth.controller.spec.ts`, `dashboard.controller.spec.ts`, `rentals.controller.spec.ts`, `employees.controller.spec.ts` (delegación a service vía `TestingModule`).
 - Expandido `dashboard.service.spec.ts`: `getEquipmentByCategory`, `getEventsByMonth` (con `jest.useFakeTimers`), `getTopEquipment`.
 - Arreglados errores de tipo preexistentes en `packages/api-client/src/__tests__/setup.ts` y `adapters.test.ts`.
 - **Todo el monorepo queda verde por primera vez**: `pnpm lint` (0 warnings), `pnpm typecheck` (0 errores), `pnpm test` (96/96 frontend), Jest backend (138/138, cobertura 81.23%).
 
 ### Estado real vs checklist de `Docs/MVP-Logistic.md`
+
 - Ya implementado (aunque el registro de sesiones no lo reflejaba): editar equipo desde el listado, desasignar equipo de evento (`undo-checkout`), validación de solapamiento de fechas (`validateNoOverlap`), dashboard con gráficos por categoría/mes/top-equipos.
 - Pendiente real: filtro por fecha en el Tablero (disponibilidad futura), QA manual en navegador (no hay browser tool en este entorno), UI/UX polish, decidir si se retoma Entidad Cliente (schema ya preparado).
 - El repo sigue sin ningún commit propio (solo el "Initial commit" del template).
 
 ### Automatización de contexto
+
 - Creado `CLAUDE.md` en la raíz de Obsidian (fuera del repo) que apunta a este archivo — se autocarga al iniciar sesión en Claude Code.
 - Hook `Stop` en `.claude/settings.json` (raíz Obsidian): compara mtimes de `apps/`+`packages/` contra este archivo y pide actualizar la sección "Última sesión" si hay código más nuevo. Ver `.claude/hooks/check-agents-fresh.sh`.
 
@@ -130,6 +136,7 @@ pnpm format           # Prettier
 ## Sesión anterior — 23 Jul 2026
 
 ### Feature: Asignar equipos al crear evento
+
 - `CreateEventDto.equipmentIds?: string[]` — array de UUIDs validado
 - `EventsService.create()` usa `$transaction`: crea Event → Rental → RentalItems, actualiza equipos a `rented`
 - `EquipmentService.findAvailable(orgId)` — equipos con `availabilityStatus: 'available'`
@@ -138,15 +145,18 @@ pnpm format           # Prettier
 - Frontend: selector de equipos con checkboxes agrupados por categoría en form de evento
 
 ### Alineación visual con mockup HTML
+
 - `protected.tsx`: sidebar con secciones (Principal/Administración/Operaciones), iconos SVG, badges dinámicos, bottom nav mobile con escáner centrado, user chip con iniciales + rol
 - `login.tsx`: tabs Dueño/Técnico, PIN input con auto-focus, colores mockup (`--bg: #0B0D14`, `--surface: #141720`, `--accent: #4F8EF7`, `--scan: #22D3EE`)
 - `events.tsx`: chips para tipo de evento, campos Teléfono/Dirección/Notas, selector equipos
 
 ### Badge de eventos activos
+
 - `GET /events/count?status=in_progress` — endpoint que devuelve `{count}` o `{pending, in_progress, partial_return, completed}`
 - SDK `fetchEventCount(status?)`, hook `useEventCount(status?)`
 - Sidebar muestra cantidad real de eventos `in_progress` (oculto si 0)
 
 ### Fixes anteriores
+
 - Scanner QR: `rentals.service.ts` buscaba por `id` en vez de `qrCode`
 - Módulo Clientes eliminado completo (backend + frontend + SDK + types)

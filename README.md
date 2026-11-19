@@ -39,8 +39,8 @@ apps/
   web/          Frontend React
   api/          Backend NestJS + Prisma
 packages/
-  sdk/          @logistica/sdk (HTTP client compartido)
-  types/        Tipos compartidos
+  api-client/   @logistica/sdk (HTTP client compartido)
+  types/        @logistica/types (tipos compartidos)
 ```
 
 ## Documentación
