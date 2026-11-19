@@ -15,7 +15,9 @@ vi.mock('@logistica/sdk', () => ({
 
 function wrapper({ children }: { children: React.ReactNode }) {
   return (
-    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+    <QueryClientProvider
+      client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+    >
       {children}
     </QueryClientProvider>
   );
@@ -27,7 +29,22 @@ beforeEach(() => {
 
 describe('useScannerEvents', () => {
   it('should return events on success', async () => {
-    const events = [{ id: 'evt1', name: 'Fiesta', type: 'party', clientName: 'C', departureDate: new Date().toISOString(), returnDate: new Date().toISOString(), status: 'pending', createdById: 'u1', createdAt: new Date().toISOString(), clientPhone: null, clientAddress: null, notes: null }];
+    const events = [
+      {
+        id: 'evt1',
+        name: 'Fiesta',
+        type: 'party',
+        clientName: 'C',
+        departureDate: new Date().toISOString(),
+        returnDate: new Date().toISOString(),
+        status: 'pending',
+        createdById: 'u1',
+        createdAt: new Date().toISOString(),
+        clientPhone: null,
+        clientAddress: null,
+        notes: null,
+      },
+    ];
     mockFetchEvents.mockResolvedValue(events);
 
     const { result } = renderHook(() => useScannerEvents(), { wrapper });
@@ -49,6 +66,22 @@ describe('useCheckout', () => {
 
     expect(mockCheckout).toHaveBeenCalledWith('evt1', 'EQ-PAR-001');
   });
+
+  it('should refresh the dashboard after a successful check-out', async () => {
+    mockCheckout.mockResolvedValue({ id: 'ri1' });
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
+    const localWrapper = ({ children }: { children: React.ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+
+    const { result } = renderHook(() => useCheckout(), { wrapper: localWrapper });
+    await act(async () => {
+      await result.current.mutateAsync({ eventId: 'evt1', qrCode: 'EQ-PAR-001' });
+    });
+
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['dashboard'] });
+  });
 });
 
 describe('useCheckin', () => {
@@ -58,7 +91,11 @@ describe('useCheckin', () => {
     const { result } = renderHook(() => useCheckin(), { wrapper });
 
     await act(async () => {
-      await result.current.mutateAsync({ eventId: 'evt1', qrCode: 'EQ-PAR-001', condition: 'good' });
+      await result.current.mutateAsync({
+        eventId: 'evt1',
+        qrCode: 'EQ-PAR-001',
+        condition: 'good',
+      });
     });
 
     expect(mockCheckin).toHaveBeenCalledWith('evt1', 'EQ-PAR-001', 'good');
@@ -74,5 +111,25 @@ describe('useCheckin', () => {
     });
 
     expect(mockCheckin).toHaveBeenCalledWith('evt1', 'EQ-PAR-001', undefined);
+  });
+
+  it('should refresh the dashboard after a successful check-in', async () => {
+    mockCheckin.mockResolvedValue({ id: 'ri1', scannedInAt: new Date().toISOString() });
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
+    const localWrapper = ({ children }: { children: React.ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+
+    const { result } = renderHook(() => useCheckin(), { wrapper: localWrapper });
+    await act(async () => {
+      await result.current.mutateAsync({
+        eventId: 'evt1',
+        qrCode: 'EQ-PAR-001',
+        condition: 'damaged',
+      });
+    });
+
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['dashboard'] });
   });
 });

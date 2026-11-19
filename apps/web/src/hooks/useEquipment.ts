@@ -8,6 +8,7 @@ import {
   fetchAvailableEquipment,
 } from '@logistica/sdk';
 import { queryKeys } from '../lib/queryKeys';
+import { invalidateDashboard } from '../lib/invalidate';
 import type { EquipmentCategory } from '@logistica/types';
 
 export function useEquipmentList() {
@@ -20,10 +21,10 @@ export function useEquipmentList() {
 export function useCreateEquipment() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (vars: { name: string; category: EquipmentCategory }) =>
-      createEquipment(vars),
+    mutationFn: (vars: { name: string; category: EquipmentCategory }) => createEquipment(vars),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.equipment.all });
+      invalidateDashboard(queryClient);
     },
   });
 }
@@ -35,6 +36,7 @@ export function useUpdateEquipment() {
       updateEquipment(vars.id, vars.data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.equipment.all });
+      invalidateDashboard(queryClient);
     },
   });
 }
@@ -45,6 +47,7 @@ export function useDeleteEquipment() {
     mutationFn: (id: string) => deleteEquipment(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.equipment.all });
+      invalidateDashboard(queryClient);
     },
   });
 }
@@ -63,6 +66,7 @@ export function useRestoreEquipment() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.equipment.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.allEquipmentLogs });
+      invalidateDashboard(queryClient);
     },
   });
 }

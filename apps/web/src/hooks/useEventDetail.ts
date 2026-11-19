@@ -7,6 +7,7 @@ import {
   updateEvent,
 } from '@logistica/sdk';
 import { queryKeys } from '../lib/queryKeys';
+import { invalidateDashboard } from '../lib/invalidate';
 
 export function useEventDetail(id: string) {
   return useQuery({
@@ -22,6 +23,8 @@ export function useCloseEvent() {
     onSuccess: (_data, eventId) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.eventDetail(eventId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.events.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.equipment.all });
+      invalidateDashboard(queryClient);
     },
   });
 }
@@ -33,7 +36,10 @@ export function useRetireEquipment() {
       retireEquipment(vars.equipmentId, vars.reason, vars.eventId),
     onSuccess: (_data, vars) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.eventDetail(vars.eventId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.events.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.equipment.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.allEquipmentLogs });
+      invalidateDashboard(queryClient);
     },
   });
 }
@@ -47,6 +53,7 @@ export function useUndoCheckout() {
       queryClient.invalidateQueries({ queryKey: queryKeys.eventDetail(vars.eventId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.events.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.equipment.all });
+      invalidateDashboard(queryClient);
     },
   });
 }

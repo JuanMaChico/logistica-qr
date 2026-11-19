@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchEvents, fetchEventCount, createEvent, deleteEvent } from '@logistica/sdk';
 import { queryKeys } from '../lib/queryKeys';
+import { invalidateDashboard } from '../lib/invalidate';
 import type { CreateEvent } from '@logistica/types';
 
 export function useEventsList() {
@@ -16,6 +17,8 @@ export function useCreateEvent() {
     mutationFn: (data: CreateEvent) => createEvent(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.events.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.equipment.all });
+      invalidateDashboard(queryClient);
     },
   });
 }
@@ -33,6 +36,8 @@ export function useDeleteEvent() {
     mutationFn: (id: string) => deleteEvent(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.events.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.equipment.all });
+      invalidateDashboard(queryClient);
     },
   });
 }

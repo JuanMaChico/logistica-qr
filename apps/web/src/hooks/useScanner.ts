@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchEvents, checkout, checkin } from '@logistica/sdk';
 import { queryKeys } from '../lib/queryKeys';
+import { invalidateDashboard } from '../lib/invalidate';
 
 export function useScannerEvents() {
   return useQuery({
@@ -12,10 +13,12 @@ export function useScannerEvents() {
 export function useCheckout() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (vars: { eventId: string; qrCode: string }) =>
-      checkout(vars.eventId, vars.qrCode),
+    mutationFn: (vars: { eventId: string; qrCode: string }) => checkout(vars.eventId, vars.qrCode),
     onSuccess: (_data, vars) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.eventDetail(vars.eventId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.events.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.equipment.all });
+      invalidateDashboard(queryClient);
     },
   });
 }
@@ -27,6 +30,9 @@ export function useCheckin() {
       checkin(vars.eventId, vars.qrCode, vars.condition),
     onSuccess: (_data, vars) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.eventDetail(vars.eventId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.events.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.equipment.all });
+      invalidateDashboard(queryClient);
     },
   });
 }
